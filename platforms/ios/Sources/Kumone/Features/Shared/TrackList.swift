@@ -134,6 +134,17 @@ struct TrackRow: View {
             }
 
             if isCompact {
+                #if os(iOS)
+                // The compact row has no duration column, so the badges sit
+                // beside the "⋯" button instead. Without this the star and the
+                // offline marker would only ever appear on iPad.
+                if showsFavoriteBadge, localLibrary.isFavorite(track) {
+                    favoriteBadge
+                }
+                if isDownloaded {
+                    downloadBadge
+                }
+                #endif
                 rowMenu
             } else {
                 likeAndDuration
@@ -279,10 +290,7 @@ struct TrackRow: View {
         HStack(spacing: 8) {
             #if os(iOS)
             if showsFavoriteBadge, localLibrary.isFavorite(track) {
-                Image(systemName: "star.fill")
-                    .font(.caption2)
-                    .foregroundStyle(Theme.accent)
-                    .accessibilityLabel(String(localized: "已收藏"))
+                favoriteBadge
             }
             if isDownloaded {
                 downloadBadge
@@ -297,6 +305,13 @@ struct TrackRow: View {
 
     #if os(iOS)
     private var isDownloaded: Bool { downloads.record(for: track) != nil }
+
+    private var favoriteBadge: some View {
+        Image(systemName: "star.fill")
+            .font(.caption2)
+            .foregroundStyle(Theme.accent)
+            .accessibilityLabel(String(localized: "已收藏"))
+    }
 
     /// Offline availability, beside the duration like the system player's
     /// downloaded marker.
