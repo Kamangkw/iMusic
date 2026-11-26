@@ -41,6 +41,9 @@ final class DownloadManager: NSObject, ObservableObject {
     private var attemptTokens: [String: UUID] = [:]
     private var tasks: [String: Task<Void, Never>] = [:]
     private var continuations: [Int: CheckedContinuation<(URL, URLResponse), Error>] = [:]
+    /// Whether `downloads.json` decoded. Guards the orphan sweep, because an
+    /// unreadable manifest looks identical to an empty library.
+    private var manifestLoaded = false
     private lazy var session: URLSession = {
         let configuration = URLSessionConfiguration.default
         configuration.timeoutIntervalForRequest = 30
@@ -248,6 +251,7 @@ final class DownloadManager: NSObject, ObservableObject {
     private func load() {
         guard let data = try? Data(contentsOf: Self.manifestURL),
               let stored = try? JSONDecoder().decode([Record].self, from: data) else { return }
+        manifestLoaded = true
         records = stored.filter { FileManager.default.fileExists(atPath: $0.fileURL.path) }
         if records.count != stored.count { save() }
     }
@@ -265,6 +269,11 @@ final class DownloadManager: NSObject, ObservableObject {
         let before = records.count
         records.removeAll { !fm.fileExists(atPath: $0.fileURL.path) }
         if records.count != before { save() }
+
+        // A manifest that failed to read leaves `records` empty, and sweeping
+        // against an empty set would delete every saved file. Reclaiming a few
+        // orphans later is worth far less than the user's offline library.
+        guard manifestLoaded else { return }
 
         let known = Set(records.map(\.fileName))
         guard let names = try? fm.contentsOfDirectory(atPath: Self.downloadDirectory.path) else { return }
