@@ -44,6 +44,19 @@ struct LXAlbumDetailView: View {
 
     @StateObject private var model = LXAlbumDetailViewModel()
     @EnvironmentObject private var player: PlayerService
+    @StateObject private var collections = CollectionStore.shared
+
+    private var collectedAlbum: CollectedAlbum {
+        CollectedAlbum(source: source.rawValue,
+                       albumID: albumID ?? "",
+                       name: albumName,
+                       artistName: artistName,
+                       coverURL: coverURL)
+    }
+
+    private var isCollected: Bool {
+        collections.isAlbumCollected(collectedAlbum)
+    }
 
     var body: some View {
         ScrollView {
@@ -91,6 +104,16 @@ struct LXAlbumDetailView: View {
         }
         .navigationTitle(albumName)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    collections.toggleAlbumWithToast(collectedAlbum)
+                } label: {
+                    Label(isCollected ? String(localized: "已收藏") : String(localized: "收藏"),
+                          systemImage: isCollected ? "star.fill" : "star")
+                }
+            }
+        }
         .task(id: "\(source.rawValue)-\(albumID ?? "")-\(albumName)-\(artistName)") {
             await model.load(source: source, albumID: albumID,
                              albumName: albumName, artistName: artistName)

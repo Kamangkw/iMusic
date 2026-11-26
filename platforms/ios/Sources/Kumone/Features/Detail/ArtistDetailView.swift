@@ -14,7 +14,23 @@ struct ArtistDetailView: View {
 
     @EnvironmentObject private var player: PlayerService
     @EnvironmentObject private var account: AccountStore
+    @StateObject private var collections = CollectionStore.shared
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    /// The page loads its metadata asynchronously, so the toolbar star only
+    /// collects once the name and artwork are known.
+    private var collectedArtist: CollectedArtist? {
+        guard let artist else { return nil }
+        return CollectedArtist(source: "wy",
+                               artistID: String(artistID),
+                               name: artist.name,
+                               avatarURL: artist.picUrl)
+    }
+
+    private var isCollected: Bool {
+        guard let collectedArtist else { return false }
+        return collections.isArtistCollected(collectedArtist)
+    }
 
     private var isCompact: Bool {
         #if os(iOS)
@@ -123,6 +139,19 @@ struct ArtistDetailView: View {
         #else
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    if let entry = collectedArtist {
+                        collections.toggleArtistWithToast(entry)
+                    }
+                } label: {
+                    Label(isCollected ? String(localized: "已收藏") : String(localized: "收藏"),
+                          systemImage: isCollected ? "star.fill" : "star")
+                }
+                .disabled(collectedArtist == nil)
+            }
+        }
         .task(id: artistID) {
             await load()
         }

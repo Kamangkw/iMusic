@@ -61,6 +61,20 @@ struct LXArtistDetailView: View {
 
     @StateObject private var model = LXArtistDetailViewModel()
     @EnvironmentObject private var player: PlayerService
+    @StateObject private var collections = CollectionStore.shared
+
+    /// LX artist results carry no provider artist ID, so the name identifies
+    /// the entry inside its source.
+    private var collectedArtist: CollectedArtist {
+        CollectedArtist(source: source.rawValue,
+                        artistID: "",
+                        name: artistName,
+                        avatarURL: avatarURL)
+    }
+
+    private var isCollected: Bool {
+        collections.isArtistCollected(collectedArtist)
+    }
 
     var body: some View {
         ScrollView {
@@ -103,6 +117,16 @@ struct LXArtistDetailView: View {
         }
         .navigationTitle(artistName)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    collections.toggleArtistWithToast(collectedArtist)
+                } label: {
+                    Label(isCollected ? String(localized: "已收藏") : String(localized: "收藏"),
+                          systemImage: isCollected ? "star.fill" : "star")
+                }
+            }
+        }
         .task(id: "\(source.rawValue)-\(artistName)") {
             await model.load(source: source, artistName: artistName)
         }

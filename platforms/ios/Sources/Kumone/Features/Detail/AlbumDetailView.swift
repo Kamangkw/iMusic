@@ -13,7 +13,24 @@ struct AlbumDetailView: View {
 
     @EnvironmentObject private var player: PlayerService
     @EnvironmentObject private var account: AccountStore
+    @StateObject private var collections = CollectionStore.shared
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    /// The page loads its metadata asynchronously, so the toolbar star only
+    /// collects once the name and artwork are known.
+    private var collectedAlbum: CollectedAlbum? {
+        guard let album else { return nil }
+        return CollectedAlbum(source: "wy",
+                              albumID: String(albumID),
+                              name: album.name,
+                              artistName: album.artist?.name ?? "",
+                              coverURL: album.picUrl)
+    }
+
+    private var isCollected: Bool {
+        guard let collectedAlbum else { return false }
+        return collections.isAlbumCollected(collectedAlbum)
+    }
 
     private var isCompact: Bool {
         #if os(iOS)
@@ -83,6 +100,19 @@ struct AlbumDetailView: View {
         #else
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    if let entry = collectedAlbum {
+                        collections.toggleAlbumWithToast(entry)
+                    }
+                } label: {
+                    Label(isCollected ? String(localized: "已收藏") : String(localized: "收藏"),
+                          systemImage: isCollected ? "star.fill" : "star")
+                }
+                .disabled(collectedAlbum == nil)
+            }
+        }
         .task(id: albumID) {
             await load()
         }
