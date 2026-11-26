@@ -22,7 +22,7 @@ enum BatchDownload {
                 skipped += 1
                 continue
             }
-            downloads.download(track, quality: resolvedQuality)
+            downloads.download(track, quality: resolvedQuality, silent: true)
             started += 1
         }
         if started == 0 {

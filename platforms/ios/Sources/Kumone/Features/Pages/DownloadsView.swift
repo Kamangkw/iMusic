@@ -64,6 +64,15 @@ struct DownloadsView: View {
         .navigationTitle("已下载")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            if downloads.activeDownloads.count + downloads.queuedCount > 0 {
+                ToolbarItem(placement: .primaryAction) {
+                    Button(role: .destructive) {
+                        downloads.cancelAllDownloads()
+                    } label: {
+                        Label("取消全部下载", systemImage: "xmark.circle")
+                    }
+                }
+            }
             if !records.isEmpty {
                 ToolbarItem(placement: .primaryAction) {
                     Button(role: .destructive) {
@@ -91,13 +100,24 @@ struct DownloadsView: View {
         }
     }
 
-    /// "12 首歌曲 · 256 MB"; the size is left out until the files are measured.
+    /// "正在下载 2 首 · 排队 18 首 · 12 首歌曲 · 256 MB"; the size is left
+    /// out until the files are measured.
     private var headerDetail: String {
         let countText = String(localized: "\(records.count) 首歌曲")
         let total = sizes.values.reduce(Int64(0), +)
-        guard total > 0 else { return countText }
-        let sizeText = ByteCountFormatter.string(fromByteCount: total, countStyle: .file)
-        return "\(countText) · \(sizeText)"
+        var parts: [String] = []
+        let activeCount = downloads.activeDownloads.count
+        let queuedCount = downloads.queuedCount
+        if queuedCount > 0 {
+            parts.append("正在下载 \(activeCount) 首 · 排队 \(queuedCount) 首")
+        } else if activeCount > 0 {
+            parts.append("正在下载 \(activeCount) 首")
+        }
+        parts.append(countText)
+        if total > 0 {
+            parts.append(ByteCountFormatter.string(fromByteCount: total, countStyle: .file))
+        }
+        return parts.joined(separator: " · ")
     }
 
     /// The tier the file was saved at and its size, shown beside the duration.

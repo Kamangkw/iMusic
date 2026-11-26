@@ -28,7 +28,15 @@ final class DownloadManager: NSObject, ObservableObject {
 
     @Published private(set) var records: [Record] = []
     @Published private(set) var activeDownloads: [String: ActiveDownload] = [:]
+    /// How many downloads are waiting for a free slot.
+    @Published private(set) var queuedCount = 0
 
+    /// Two at a time keeps the LX source from throttling a whole album.
+    private let maxConcurrentDownloads = 2
+    private var pendingQueue: [(track: Track, quality: AudioQuality, silent: Bool)] = []
+    /// Identifies the current attempt per key, so a cancelled transfer that
+    /// finishes late cannot clear the state of the one that replaced it.
+    private var attemptTokens: [String: UUID] = [:]
     private var tasks: [String: Task<Void, Never>] = [:]
     private var continuations: [Int: CheckedContinuation<(URL, URLResponse), Error>] = [:]
     private lazy var session: URLSession = {
@@ -64,17 +72,21 @@ final class DownloadManager: NSObject, ObservableObject {
     }
 
     func isDownloading(_ track: Track) -> Bool {
-        activeDownloads[track.normalizedForLXPlayback().playbackKey] != nil
+        let key = track.normalizedForLXPlayback().playbackKey
+        return activeDownloads[key] != nil || pendingQueue.contains { $0.track.playbackKey == key }
     }
 
-    func download(_ track: Track, quality: AudioQuality? = nil) {
+    /// Queues a transfer, or starts it right away while a slot is free.
+    /// `silent` skips this track's toast so a batch shows one summary only.
+    func download(_ track: Track, quality: AudioQuality? = nil, silent: Bool = false) {
         let normalized = track.normalizedForLXPlayback()
         let key = normalized.playbackKey
         guard record(for: normalized) == nil else {
             ToastCenter.shared.show("歌曲已经下载")
             return
         }
-        guard tasks[key] == nil else { return }
+        guard tasks[key] == nil,
+              !pendingQueue.contains(where: { $0.track.playbackKey == key }) else { return }
 
         if SettingsManager.shared.downloadOnlyOnWiFi, NetworkMonitor.shared.isOnCellular {
             ToastCenter.shared.show(String(localized: "正在使用移动数据，已暂停下载"))
@@ -82,20 +94,43 @@ final class DownloadManager: NSObject, ObservableObject {
         }
 
         let requestedQuality = quality ?? SettingsManager.shared.audioQuality
+        if tasks.count >= maxConcurrentDownloads {
+            pendingQueue.append((track: normalized, quality: requestedQuality, silent: silent))
+            queuedCount = pendingQueue.count
+            return
+        }
+        start(normalized, quality: requestedQuality, silent: silent)
+    }
+
+    /// Starts one transfer. The caller has already checked the cap, so this
+    /// always takes a slot.
+    private func start(_ track: Track, quality: AudioQuality, silent: Bool) {
+        let normalized = track.normalizedForLXPlayback()
+        let key = normalized.playbackKey
+        let token = UUID()
+        attemptTokens[key] = token
         activeDownloads[key] = ActiveDownload(id: key, track: normalized,
-                                              requestedQuality: requestedQuality,
+                                              requestedQuality: quality,
                                               fraction: nil)
-        ToastCenter.shared.show("正在解析并下载 \(normalized.name)")
+        if !silent {
+            ToastCenter.shared.show("正在解析并下载 \(normalized.name)")
+        }
 
         let task = Task { [weak self] in
             guard let self else { return }
             defer {
-                self.activeDownloads[key] = nil
-                self.tasks[key] = nil
+                // Only the attempt that still owns the key frees this slot,
+                // then `pump` counts the next one.
+                if self.attemptTokens[key] == token {
+                    self.attemptTokens[key] = nil
+                    self.activeDownloads[key] = nil
+                    self.tasks[key] = nil
+                    self.pump()
+                }
             }
             do {
                 let resolved = try await LXUserAPIService.shared.resolveDownloadMusicURL(
-                    for: normalized, quality: requestedQuality.rawValue)
+                    for: normalized, quality: quality.rawValue)
                 let (temporaryURL, response) = try await self.downloadFile(from: resolved.url,
                                                                             key: key)
                 if let response = response as? HTTPURLResponse,
@@ -126,6 +161,26 @@ final class DownloadManager: NSObject, ObservableObject {
             }
         }
         tasks[key] = task
+    }
+
+    /// Starts queued downloads until the concurrency cap is reached.
+    private func pump() {
+        while tasks.count < maxConcurrentDownloads, !pendingQueue.isEmpty {
+            let next = pendingQueue.removeFirst()
+            queuedCount = pendingQueue.count
+            start(next.track, quality: next.quality, silent: next.silent)
+        }
+    }
+
+    /// Stops every transfer and empties the queue. Files already saved stay on
+    /// the device.
+    func cancelAllDownloads() {
+        for task in tasks.values { task.cancel() }
+        tasks.removeAll()
+        attemptTokens.removeAll()
+        pendingQueue.removeAll()
+        queuedCount = 0
+        activeDownloads.removeAll()
     }
 
     func downloadBatch(_ tracks: [Track], quality: AudioQuality) {
