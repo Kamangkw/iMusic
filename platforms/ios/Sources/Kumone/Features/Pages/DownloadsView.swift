@@ -9,16 +9,20 @@ struct DownloadsView: View {
     @StateObject private var downloads = DownloadManager.shared
     @EnvironmentObject private var player: PlayerService
     @State private var showDeleteAll = false
+    /// File sizes keyed by record id. Read once per record list change so the
+    /// row text never has to touch the disk while the view redraws.
+    @State private var sizes: [String: Int64] = [:]
 
     private var records: [DownloadManager.Record] { downloads.records }
     private var tracks: [Track] { records.map(\.track) }
+    private var recordIDs: [String] { records.map(\.id) }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 CollectionHeader(
                     title: String(localized: "已下载"),
-                    detail: String(localized: "\(records.count) 首歌曲"),
+                    detail: headerDetail,
                     playDisabled: tracks.isEmpty,
                     onPlay: { player.play(tracks: tracks, source: .none) },
                     onShuffle: { player.playShuffled(tracks: tracks, source: .none) }
@@ -47,7 +51,7 @@ struct DownloadsView: View {
                     TrackListView(
                         tracks: tracks,
                         source: .none,
-                        rowTrailingText: downloadQuality,
+                        rowTrailingText: rowTrailingText,
                         showsFavoriteBadge: true
                     )
                     .padding(.horizontal, Theme.Layout.contentInset - 10)
@@ -70,6 +74,9 @@ struct DownloadsView: View {
                 }
             }
         }
+        .task(id: recordIDs) {
+            loadSizes()
+        }
         .confirmationDialog(
             "删除全部下载？",
             isPresented: $showDeleteAll,
@@ -84,10 +91,34 @@ struct DownloadsView: View {
         }
     }
 
-    /// The tier the file was saved at, shown beside its duration.
-    private func downloadQuality(_ track: Track) -> String? {
+    /// "12 首歌曲 · 256 MB"; the size is left out until the files are measured.
+    private var headerDetail: String {
+        let countText = String(localized: "\(records.count) 首歌曲")
+        let total = sizes.values.reduce(Int64(0), +)
+        guard total > 0 else { return countText }
+        let sizeText = ByteCountFormatter.string(fromByteCount: total, countStyle: .file)
+        return "\(countText) · \(sizeText)"
+    }
+
+    /// The tier the file was saved at and its size, shown beside the duration.
+    private func rowTrailingText(_ track: Track) -> String? {
         guard let record = downloads.record(for: track) else { return nil }
-        return AudioQuality(lxType: record.quality)?.badgeName ?? record.quality.uppercased()
+        let quality = AudioQuality(lxType: record.quality)?.badgeName ?? record.quality.uppercased()
+        guard let bytes = sizes[record.id] else { return quality }
+        return "\(quality) · \(ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file))"
+    }
+
+    /// A saved file can disappear between the manifest load and this read, so
+    /// a missing entry simply keeps the row without a size.
+    private func loadSizes() {
+        var measured: [String: Int64] = [:]
+        for record in records {
+            guard let attributes = try? FileManager.default.attributesOfItem(
+                      atPath: record.fileURL.path),
+                  let size = attributes[.size] as? Int64 else { continue }
+            measured[record.id] = size
+        }
+        sizes = measured
     }
 }
 
