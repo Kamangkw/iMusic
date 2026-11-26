@@ -391,9 +391,9 @@ struct TrackRow: View {
     }
 
     #if os(iOS)
-    /// Start a download at the preferred quality, pick a tier, watch the
-    /// transfer, or drop the offline copy. The engine exposes no cancel, so a
-    /// running download is reported rather than offered as a button.
+    /// Start a download at the preferred quality, pick a tier, retry a failed
+    /// one, or drop the offline copy. The downloads page owns cancellation, so
+    /// a running or queued track is reported rather than offered as a button.
     @ViewBuilder
     private var downloadMenuItems: some View {
         if let progress = downloadProgressLabel {
@@ -404,17 +404,25 @@ struct TrackRow: View {
                 downloads.delete(record)
                 ToastCenter.shared.show(String(localized: "已删除下载"))
             }
+        } else if let failure = downloads.failureMessage(for: track) {
+            Button("重试下载") { downloads.download(track) }
+            Button("下载音质…") { showDownloadQualities = true }
+            Divider()
+            Text("上次失败：\(failure)")
         } else {
             Button("下载") { downloads.download(track) }
             Button("下载音质…") { showDownloadQualities = true }
         }
     }
 
-    /// `nil` unless this track is transferring. Menus convert their content
-    /// when they open, so the percentage is read from the observed engine.
+    /// `nil` unless this track is transferring or waiting for a free slot.
+    /// Menus convert their content when they open, so the percentage is read
+    /// from the observed engine.
     private var downloadProgressLabel: String? {
         let key = track.normalizedForLXPlayback().playbackKey
-        guard let active = downloads.activeDownloads[key] else { return nil }
+        guard let active = downloads.activeDownloads[key] else {
+            return downloads.isDownloading(track) ? String(localized: "正在排队…") : nil
+        }
         guard let fraction = active.fraction else {
             return String(localized: "正在下载…")
         }

@@ -3516,17 +3516,25 @@ private struct MinimalTrackInfoRow: View {
                 downloads.delete(record)
                 ToastCenter.shared.show(String(localized: "已删除下载"))
             }
+        } else if let failure = downloads.failureMessage(for: track) {
+            Button("重试下载") { downloads.download(track) }
+            Button("下载音质…") { showDownloadQualities = true }
+            Divider()
+            Text("上次失败：\(failure)")
         } else {
             Button("下载") { downloads.download(track) }
             Button("下载音质…") { showDownloadQualities = true }
         }
     }
 
-    /// `nil` unless this track is transferring. Menus convert their content
-    /// when they open, so the percentage is read from the observed engine.
+    /// `nil` unless this track is transferring or waiting for a free slot.
+    /// Menus convert their content when they open, so the percentage is read
+    /// from the observed engine.
     private func downloadProgressLabel(for track: Track) -> String? {
         let key = track.normalizedForLXPlayback().playbackKey
-        guard let active = downloads.activeDownloads[key] else { return nil }
+        guard let active = downloads.activeDownloads[key] else {
+            return downloads.isDownloading(track) ? String(localized: "正在排队…") : nil
+        }
         guard let fraction = active.fraction else {
             return String(localized: "正在下载…")
         }

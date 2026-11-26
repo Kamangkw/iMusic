@@ -30,6 +30,8 @@ final class DownloadManager: NSObject, ObservableObject {
     @Published private(set) var activeDownloads: [String: ActiveDownload] = [:]
     /// How many downloads are waiting for a free slot.
     @Published private(set) var queuedCount = 0
+    /// The last error per track key, cleared when the same track is retried.
+    @Published private(set) var failures: [String: String] = [:]
 
     /// Two at a time keeps the LX source from throttling a whole album.
     private let maxConcurrentDownloads = 2
@@ -76,6 +78,10 @@ final class DownloadManager: NSObject, ObservableObject {
         return activeDownloads[key] != nil || pendingQueue.contains { $0.track.playbackKey == key }
     }
 
+    func failureMessage(for track: Track) -> String? {
+        failures[track.normalizedForLXPlayback().playbackKey]
+    }
+
     /// Queues a transfer, or starts it right away while a slot is free.
     /// `silent` skips this track's toast so a batch shows one summary only.
     func download(_ track: Track, quality: AudioQuality? = nil, silent: Bool = false) {
@@ -109,6 +115,7 @@ final class DownloadManager: NSObject, ObservableObject {
         let key = normalized.playbackKey
         let token = UUID()
         attemptTokens[key] = token
+        failures[key] = nil
         activeDownloads[key] = ActiveDownload(id: key, track: normalized,
                                               requestedQuality: quality,
                                               fraction: nil)
@@ -150,6 +157,7 @@ final class DownloadManager: NSObject, ObservableObject {
                                   fileName: fileName, createdAt: Date())
                 records.insert(item, at: 0)
                 save()
+                failures[key] = nil
                 ToastCenter.shared.show("已下载 \(normalized.name)")
             } catch is CancellationError {
                 // A cancelled task is silent; the user can start it again.
@@ -157,7 +165,11 @@ final class DownloadManager: NSObject, ObservableObject {
                     ToastCenter.shared.show("音源配置已更改，请重新开始下载")
                 }
             } catch {
-                ToastCenter.shared.show("下载失败：\(error.localizedDescription)")
+                // A queue the user stopped is not a failure worth retrying.
+                if !Task.isCancelled {
+                    failures[key] = error.localizedDescription
+                    ToastCenter.shared.show("下载失败：\(error.localizedDescription)")
+                }
             }
         }
         tasks[key] = task
