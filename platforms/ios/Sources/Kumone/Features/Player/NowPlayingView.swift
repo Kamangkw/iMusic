@@ -3398,6 +3398,15 @@ private struct MinimalTrackInfoRow: View {
                     .font(.body.weight(.bold))
                     .foregroundStyle(.white)
                     .lineLimit(1)
+                #if os(iOS)
+                if let track = player.currentTrack, downloads.record(for: track) != nil {
+                    Image(systemName: "arrow.down.circle.fill")
+                        .font(.caption2)
+                        .foregroundStyle(.white.opacity(0.55))
+                        .fixedSize()
+                        .accessibilityLabel(String(localized: "已下载"))
+                }
+                #endif
                 if player.currentTrack?.fee == 1 {
                     VIPBadge()
                 }
