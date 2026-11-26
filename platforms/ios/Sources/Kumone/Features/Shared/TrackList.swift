@@ -406,7 +406,7 @@ struct TrackRow: View {
 /// Tier picker for a single download. The engine probes the enabled sources
 /// once per tier, so the list is requested when this sheet opens rather than
 /// for every row of every list.
-private struct DownloadQualitySheet: View {
+struct DownloadQualitySheet: View {
     let track: Track
 
     @Environment(\.dismiss) private var dismiss

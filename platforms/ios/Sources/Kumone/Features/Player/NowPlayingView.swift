@@ -3342,6 +3342,10 @@ private struct MinimalTrackInfoRow: View {
     @ObservedObject private var localLibrary = LocalPlaylistStore.shared
     @State private var showAddToPlaylist = false
     @State private var airPlayRequest = 0
+    #if os(iOS)
+    @ObservedObject private var downloads = DownloadManager.shared
+    @State private var showDownloadQualities = false
+    #endif
     var metadataOnly = false
     var actionsOnly = false
 
@@ -3375,6 +3379,13 @@ private struct MinimalTrackInfoRow: View {
                 AddToPlaylistSheet(track: track)
             }
         }
+        #if os(iOS)
+        .sheet(isPresented: $showDownloadQualities) {
+            if let track = player.currentTrack {
+                DownloadQualitySheet(track: track)
+            }
+        }
+        #endif
     }
 
     private func metadata(
@@ -3436,6 +3447,14 @@ private struct MinimalTrackInfoRow: View {
                 Label("加入歌单…", systemImage: "music.note.list")
             }
 
+            #if os(iOS)
+            Divider()
+
+            downloadMenuItems(for: track)
+
+            Divider()
+            #endif
+
             Menu {
                 ForEach([0.5, 0.75, 1.0, 1.25, 1.5, 2.0], id: \.self) { rate in
                     Button {
@@ -3483,6 +3502,37 @@ private struct MinimalTrackInfoRow: View {
             .opacity(0.01)
         }
     }
+
+    #if os(iOS)
+    /// The same entries as `TrackRow`'s row menu, so a download started from
+    /// the player behaves exactly like one started from a list.
+    @ViewBuilder
+    private func downloadMenuItems(for track: Track) -> some View {
+        if let progress = downloadProgressLabel(for: track) {
+            Button(progress) {}
+                .disabled(true)
+        } else if let record = downloads.record(for: track) {
+            Button("删除下载", role: .destructive) {
+                downloads.delete(record)
+                ToastCenter.shared.show(String(localized: "已删除下载"))
+            }
+        } else {
+            Button("下载") { downloads.download(track) }
+            Button("下载音质…") { showDownloadQualities = true }
+        }
+    }
+
+    /// `nil` unless this track is transferring. Menus convert their content
+    /// when they open, so the percentage is read from the observed engine.
+    private func downloadProgressLabel(for track: Track) -> String? {
+        let key = track.normalizedForLXPlayback().playbackKey
+        guard let active = downloads.activeDownloads[key] else { return nil }
+        guard let fraction = active.fraction else {
+            return String(localized: "正在下载…")
+        }
+        return String(localized: "正在下载…（\(Int(fraction * 100))%）")
+    }
+    #endif
 }
 
 private struct MinimalTransportControls: View {
