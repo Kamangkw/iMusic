@@ -380,6 +380,14 @@ final class LocalPlaylistStore: ObservableObject {
             favoriteTracks.remove(at: index)
         } else {
             favoriteTracks.insert(track.normalizedForLXPlayback(), at: 0)
+            #if os(iOS)
+            // Liking a song can also keep a copy on the device. Removing it
+            // from favourites leaves the downloaded file alone so the offline
+            // library never shrinks as a side effect.
+            if SettingsManager.shared.autoDownloadFavorites {
+                DownloadManager.shared.download(track)
+            }
+            #endif
         }
         persistFavorites()
     }

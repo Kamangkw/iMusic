@@ -15,7 +15,7 @@ struct SettingsView: View {
     // collapsible, but opening the settings page with every group closed makes
     // the app look empty and hides the controls users came here to change.
     @State private var expandedSections: Set<String> = [
-        "audio", "accounts", "playback", "home", "sources",
+        "audio", "accounts", "playback", "downloads", "home", "sources",
         "appearance", "lyrics",
         "storage", "about"
     ]
@@ -80,6 +80,15 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+
+#if os(iOS)
+            SettingsDisclosureSection("下载", isExpanded: sectionBinding("downloads")) {
+                Toggle("收藏时自动下载", isOn: $settings.autoDownloadFavorites)
+                Text("开启后，加入我喜欢的音乐时会同时保存一份离线文件。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+#endif
 
             SettingsDisclosureSection("首页推荐", isExpanded: sectionBinding("home")) {
                 Picker("推荐内容", selection: $settings.homeRecommendationMode) {

@@ -238,6 +238,7 @@ final class SettingsManager: ObservableObject {
         static let homeRecommendationMode = "settings.homeRecommendationMode"
         static let homeRecommendationPlatform = "settings.homeRecommendationPlatform"
         static let sourcePlatformFallback = "settings.sourcePlatformFallback"
+        static let autoDownloadFavorites = "settings.autoDownloadFavorites"
     }
 
     @Published var audioQuality: AudioQuality {
@@ -312,6 +313,12 @@ final class SettingsManager: ObservableObject {
         didSet { UserDefaults.standard.set(enableSourcePlatformFallback, forKey: Keys.sourcePlatformFallback) }
     }
 
+    /// Keep an offline copy of each track added to 我喜欢的音乐. On by default
+    /// so a liked song still plays without a signal.
+    @Published var autoDownloadFavorites: Bool {
+        didSet { UserDefaults.standard.set(autoDownloadFavorites, forKey: Keys.autoDownloadFavorites) }
+    }
+
     private init() {
         let defaults = UserDefaults.standard
         defaults.removeObject(forKey: "settings.nowPlayingMode")
@@ -352,5 +359,6 @@ final class SettingsManager: ObservableObject {
             LXCatalogPlatform.discoveryCases.contains($0) ? $0 : nil
         } ?? .wy
         enableSourcePlatformFallback = defaults.object(forKey: Keys.sourcePlatformFallback) as? Bool ?? true
+        autoDownloadFavorites = defaults.object(forKey: Keys.autoDownloadFavorites) as? Bool ?? true
     }
 }
