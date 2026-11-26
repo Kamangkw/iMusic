@@ -513,7 +513,103 @@ enum LXCatalogService {
             throw LXCatalogError.invalidResponse
         }
         let json = String(body[start...end])
-        return try JSONSerialization.jsonObject(with: Data(json.utf8))
+        if let object = try? JSONSerialization.jsonObject(with: Data(json.utf8)) {
+            return object
+        }
+
+        // Kuwo's legacy nodes still answer some songlist queries with a
+        // JavaScript object literal: the same shape as JSON, but with
+        // single-quoted strings and bare keys. `pcjson=1` is not honoured by
+        // every edge node, so convert the literal instead of failing the page.
+        if let converted = javaScriptObjectLiteralAsJSON(json),
+           let object = try? JSONSerialization.jsonObject(with: Data(converted.utf8)) {
+            return object
+        }
+        throw LXCatalogError.invalidResponse
+    }
+
+    /// Rewrites a JavaScript object literal as JSON text: single-quoted
+    /// strings become double-quoted (inner quotes escaped) and bare keys are
+    /// quoted. Returns `nil` when the text does not look like a literal.
+    private static func javaScriptObjectLiteralAsJSON(_ text: String) -> String? {
+        var quoted = ""
+        quoted.reserveCapacity(text.count + text.count / 8)
+        var openQuote: Character?
+        var escaped = false
+        for character in text {
+            if let activeQuote = openQuote {
+                if escaped {
+                    // `\'` is the only escape whose spelling differs between
+                    // the two formats; everything else keeps its JSON form.
+                    if character == "'" {
+                        quoted.append("'")
+                    } else {
+                        quoted.append("\\")
+                        quoted.append(character)
+                    }
+                    escaped = false
+                    continue
+                }
+                switch character {
+                case "\\":
+                    escaped = true
+                case activeQuote:
+                    openQuote = nil
+                    quoted.append("\"")
+                case "\"":
+                    quoted.append("\\\"")
+                default:
+                    quoted.append(character)
+                }
+                continue
+            }
+            switch character {
+            case "'", "\"":
+                openQuote = character
+                quoted.append("\"")
+            default:
+                quoted.append(character)
+            }
+        }
+        guard openQuote == nil, !escaped else { return nil }
+
+        // Bare keys, as in `{key:` or `,key:`.
+        var output = ""
+        output.reserveCapacity(quoted.count + 32)
+        var index = quoted.startIndex
+        while index < quoted.endIndex {
+            let character = quoted[index]
+            output.append(character)
+            index = quoted.index(after: index)
+            guard character == "{" || character == "," else { continue }
+
+            var cursor = index
+            while cursor < quoted.endIndex {
+                let next = quoted[cursor]
+                guard next == " " || next == "\n" || next == "\r" || next == "\t" else { break }
+                output.append(next)
+                cursor = quoted.index(after: cursor)
+            }
+
+            var name = ""
+            var scan = cursor
+            while scan < quoted.endIndex {
+                let next = quoted[scan]
+                guard next.isLetter || next.isNumber || next == "_" || next == "$" else { break }
+                name.append(next)
+                scan = quoted.index(after: scan)
+            }
+            let startsLikeKey = name.first.map { $0.isLetter || $0 == "_" || $0 == "$" } ?? false
+            guard startsLikeKey, scan < quoted.endIndex, quoted[scan] == ":" else {
+                index = cursor
+                continue
+            }
+            output.append("\"")
+            output.append(name)
+            output.append("\"")
+            index = scan
+        }
+        return output
     }
 
     private static func fetchData(_ url: URL, method: String = "GET", body: Data? = nil,
