@@ -9,6 +9,7 @@ struct DownloadsView: View {
     @StateObject private var downloads = DownloadManager.shared
     @EnvironmentObject private var player: PlayerService
     @State private var showDeleteAll = false
+    @State private var searchText = ""
     /// File sizes keyed by record id. Read once per record list change so the
     /// row text never has to touch the disk while the view redraws.
     @State private var sizes: [String: Int64] = [:]
@@ -17,15 +18,28 @@ struct DownloadsView: View {
     private var tracks: [Track] { records.map(\.track) }
     private var recordIDs: [String] { records.map(\.id) }
 
+    /// Filters the offline library by title, artist or album. Playback and the
+    /// play/shuffle buttons follow the filtered list so a search behaves like a
+    /// temporary sub-library.
+    private var filteredTracks: [Track] {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return tracks }
+        return tracks.filter { track in
+            track.name.localizedStandardContains(query)
+                || track.artistNames.localizedStandardContains(query)
+                || track.album.name.localizedStandardContains(query)
+        }
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 CollectionHeader(
                     title: String(localized: "已下载"),
                     detail: headerDetail,
-                    playDisabled: tracks.isEmpty,
-                    onPlay: { player.play(tracks: tracks, source: .none) },
-                    onShuffle: { player.playShuffled(tracks: tracks, source: .none) }
+                    playDisabled: filteredTracks.isEmpty,
+                    onPlay: { player.play(tracks: filteredTracks, source: .none) },
+                    onShuffle: { player.playShuffled(tracks: filteredTracks, source: .none) }
                 ) {
                     LinearGradient(
                         colors: [Theme.accent, Theme.accentDeep],
@@ -47,9 +61,16 @@ struct DownloadsView: View {
                         subtitle: "在歌曲菜单中选“下载”，离线也能播放"
                     )
                     .frame(minHeight: 260)
+                } else if filteredTracks.isEmpty {
+                    EmptyStateView(
+                        icon: "magnifyingglass",
+                        title: "没有匹配的歌曲",
+                        subtitle: "试试其他关键词"
+                    )
+                    .frame(minHeight: 260)
                 } else {
                     TrackListView(
-                        tracks: tracks,
+                        tracks: filteredTracks,
                         source: .none,
                         rowTrailingText: rowTrailingText,
                         showsFavoriteBadge: true
@@ -63,6 +84,7 @@ struct DownloadsView: View {
         }
         .navigationTitle("已下载")
         .navigationBarTitleDisplayMode(.inline)
+        .searchable(text: $searchText, prompt: "搜索已下载的歌曲")
         .toolbar {
             if downloads.activeDownloads.count + downloads.queuedCount > 0 {
                 ToolbarItem(placement: .primaryAction) {
