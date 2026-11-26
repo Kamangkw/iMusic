@@ -8,7 +8,9 @@ struct SongCommentsSheet: View {
         case latest
 
         var id: String { rawValue }
-        var title: String { self == .hot ? "热门评论" : "最新评论" }
+        var title: String {
+            self == .hot ? String(localized: "热门评论") : String(localized: "最新评论")
+        }
     }
 
     let track: Track
@@ -132,7 +134,7 @@ struct SongCommentsSheet: View {
                 hotComments = uniqueComments((response.topComments + response.hotComments).map(DisplayComment.init))
                 latestComments = uniqueComments(response.comments.map(DisplayComment.init))
                 if !sourceIsNetease {
-                    metadataNotice = "当前歌曲来自 \(LXCatalogPlatform.displayName(for: source))；评论默认使用网易云公开数据。"
+                    metadataNotice = String(localized: "当前歌曲来自 \(LXCatalogPlatform.localizedName(for: source))；评论默认使用网易云公开数据。")
                 }
                 isLoading = false
                 return
@@ -144,7 +146,7 @@ struct SongCommentsSheet: View {
             if !sourceIsNetease, let response = try? await LXCommentsService.comments(for: track) {
                 hotComments = uniqueComments(response.hot.map(DisplayComment.init))
                 latestComments = uniqueComments(response.latest.map(DisplayComment.init))
-                metadataNotice = "网易云公开评论暂不可用，已回退到 \(LXCatalogPlatform.displayName(for: source))。"
+                metadataNotice = String(localized: "网易云公开评论暂不可用，已回退到 \(LXCatalogPlatform.localizedName(for: source))。")
                 isLoading = false
                 return
             }

@@ -114,7 +114,7 @@ struct LXAlbumDetailView: View {
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
                 }
-                Text(source.displayName)
+                Text(source.localizedName)
                     .font(.caption)
                     .foregroundStyle(Theme.accent)
             }

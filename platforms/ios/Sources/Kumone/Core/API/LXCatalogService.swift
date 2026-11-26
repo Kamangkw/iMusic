@@ -27,6 +27,17 @@ enum LXCatalogPlatform: String, CaseIterable, Identifiable, Sendable {
         case .wy: return "网易云"
         }
     }
+
+    /// Localized label for UI. `displayName` stays the canonical Chinese name
+    /// because imported playlist metadata persists it in `sourceName`.
+    var localizedName: String {
+        Bundle.main.localizedString(forKey: displayName, value: nil, table: nil)
+    }
+
+    static func localizedName(for rawValue: String?) -> String {
+        Bundle.main.localizedString(forKey: displayName(for: rawValue), value: nil, table: nil)
+    }
+
     var sourceID: String? {
         switch self {
         case .aggregate: return nil

@@ -118,8 +118,8 @@ struct LXPlaylistDetailView: View {
 
             CollectionHeader(
                 title: detail.name,
-                curator: detail.author ?? detail.source.displayName,
-                detail: [detail.source.displayName, trackCountDescription(detail)].joined(separator: " · "),
+                curator: detail.author ?? detail.source.localizedName,
+                detail: [detail.source.localizedName, trackCountDescription(detail)].joined(separator: " · "),
                 description: detail.description,
                 playDisabled: detail.tracks.isEmpty,
                 onPlay: { player.play(tracks: detail.tracks, source: .none, context: .recents) },

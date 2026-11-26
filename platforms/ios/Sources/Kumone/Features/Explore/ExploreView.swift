@@ -9,6 +9,12 @@ final class ExploreViewModel: ObservableObject {
         "轻音乐", "说唱", "古典", "影视原声", "ACG", "古风", "怀旧", "治愈",
     ]
 
+    /// Category names stay Simplified because they are sent to the catalogue
+    /// APIs; only their menu labels are localized.
+    static func localizedCategory(_ category: String) -> String {
+        Bundle.main.localizedString(forKey: category, value: nil, table: nil)
+    }
+
     static func categoryColor(at index: Int) -> Color {
         return switch index % 8 {
         case 0: Color(red: 0.55, green: 0.20, blue: 0.38)
@@ -237,7 +243,7 @@ struct ExploreView: View {
 
                     if !model.tracks.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
-                            SectionHeader(title: "精选歌曲", subtitle: model.platform.displayName)
+                            SectionHeader(title: "精选歌曲", subtitle: model.platform.localizedName)
                                 .padding(.horizontal, Theme.Layout.contentInset)
                             TrackListView(tracks: model.tracks, showsSummary: false)
                                 .padding(.horizontal, Theme.Layout.contentInset - 10)
@@ -245,7 +251,7 @@ struct ExploreView: View {
                     }
 
                     if !visiblePlaylists.isEmpty {
-                        SectionHeader(title: model.selectedCategory == "推荐" ? "更多歌单" : "\(model.selectedCategory)歌单")
+                        SectionHeader(title: categorySectionTitle)
                             .padding(.horizontal, Theme.Layout.contentInset)
                         CardGrid {
                             ForEach(Array(visiblePlaylists.enumerated()), id: \.element.id) { index, playlist in
@@ -253,7 +259,7 @@ struct ExploreView: View {
                                     CoverCardBody(
                                         coverURL: playlist.coverURL?.resizedImageURL(384),
                                         title: playlist.name,
-                                        subtitle: [playlist.source.displayName, playlist.author]
+                                        subtitle: [playlist.source.localizedName, playlist.author]
                                             .compactMap { $0 }.joined(separator: " · "),
                                         playCount: playlist.playCount
                                     )
@@ -319,9 +325,9 @@ struct ExploreView: View {
                         model.selectPlatform(platform)
                     } label: {
                         if model.platform == platform {
-                            Label(platform.displayName, systemImage: "checkmark")
+                            Label(platform.localizedName, systemImage: "checkmark")
                         } else {
-                            Text(platform.displayName)
+                            Text(platform.localizedName)
                         }
                     }
                 }
@@ -333,9 +339,9 @@ struct ExploreView: View {
                         model.select(category)
                     } label: {
                         if model.selectedCategory == category {
-                            Label(category, systemImage: "checkmark")
+                            Label(LocalizedStringKey(category), systemImage: "checkmark")
                         } else {
-                            Text(category)
+                            Text(LocalizedStringKey(category))
                         }
                     }
                 }
@@ -346,13 +352,19 @@ struct ExploreView: View {
                 systemImage: "line.3.horizontal.decrease"
             )
         }
-        .accessibilityLabel("筛选新发现：\(model.platform.displayName)、\(model.selectedCategory)")
+        .accessibilityLabel("筛选新发现：\(model.platform.localizedName)、\(ExploreViewModel.localizedCategory(model.selectedCategory))")
     }
 
-    private var discoveryFilterTitle: String {
+    private var discoveryFilterTitle: LocalizedStringKey {
         model.selectedCategory == "推荐"
-            ? model.platform.displayName
-            : "\(model.platform.displayName) · \(model.selectedCategory)"
+            ? LocalizedStringKey(model.platform.localizedName)
+            : "\(model.platform.localizedName) · \(ExploreViewModel.localizedCategory(model.selectedCategory))"
+    }
+
+    private var categorySectionTitle: LocalizedStringKey {
+        model.selectedCategory == "推荐"
+            ? "更多歌单"
+            : "\(ExploreViewModel.localizedCategory(model.selectedCategory))歌单"
     }
 
     private static let featuredCount = 5
@@ -408,7 +420,7 @@ struct ExploreView: View {
                     .font(.title3)
                     .foregroundStyle(.primary)
                     .lineLimit(1)
-                Text([playlist.source.displayName, playlist.author].compactMap { $0 }.joined(separator: " · "))
+                Text([playlist.source.localizedName, playlist.author].compactMap { $0 }.joined(separator: " · "))
                     .font(.title3)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)

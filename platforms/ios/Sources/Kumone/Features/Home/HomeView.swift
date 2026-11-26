@@ -350,9 +350,9 @@ struct HomeView: View {
                             selectHomePlatform(platform)
                         } label: {
                             if isHomePlatform(platform) {
-                                Label(platform.displayName, systemImage: "checkmark")
+                                Label(platform.localizedName, systemImage: "checkmark")
                             } else {
-                                Text(platform.displayName)
+                                Text(platform.localizedName)
                             }
                         }
                     }
@@ -511,8 +511,8 @@ struct HomeView: View {
 
     private var homeSourceTitle: String {
         settings.homeRecommendationMode == .netease
-            ? "网易云"
-            : settings.homeRecommendationPlatform.displayName
+            ? String(localized: "网易云")
+            : settings.homeRecommendationPlatform.localizedName
     }
 
     private func isHomePlatform(_ platform: LXCatalogPlatform) -> Bool {
@@ -531,7 +531,7 @@ struct HomeView: View {
             CoverCardBody(
                 coverURL: playlist.coverURL?.resizedImageURL(384),
                 title: playlist.name,
-                subtitle: [playlist.source.displayName, playlist.author].compactMap { $0 }.joined(separator: " · "),
+                subtitle: [playlist.source.localizedName, playlist.author].compactMap { $0 }.joined(separator: " · "),
                 playCount: playlist.playCount
             )
         }

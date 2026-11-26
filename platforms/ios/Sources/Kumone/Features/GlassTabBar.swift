@@ -16,7 +16,7 @@ import SwiftUI
 struct GlassTabBar: View {
     struct Item: Identifiable {
         let tab: IOSTab
-        let title: String
+        let title: LocalizedStringKey
         let icon: String
         var id: IOSTab { tab }
     }
@@ -78,7 +78,7 @@ struct GlassTabBar: View {
             Image(systemName: item.icon)
                 .font(.system(size: 23, weight: .semibold))
                 .symbolVariant(.fill)
-            Text(verbatim: item.title)
+            Text(item.title)
                 .font(.system(size: 10, weight: .semibold))
         }
         .foregroundStyle(isSelected

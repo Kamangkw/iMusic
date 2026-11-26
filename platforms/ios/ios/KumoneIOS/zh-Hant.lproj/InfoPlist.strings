@@ -1,0 +1,2 @@
+/* Localized system permission prompts (Traditional Chinese, Hong Kong) */
+"NSLocalNetworkUsageDescription" = "iMusic 需要存取本地網絡，以連接你部署在區域網絡的 LX Sync Server，並同步歌單與收藏。";

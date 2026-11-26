@@ -23,15 +23,15 @@ enum MoumusicEqualizerPreset: String, CaseIterable, Identifiable, Equatable {
 
     var displayName: String {
         switch self {
-        case .flat: return "默认"
-        case .bass: return "低音增强"
-        case .vocal: return "人声"
-        case .pop: return "流行"
-        case .rock: return "摇滚"
-        case .classical: return "古典"
-        case .jazz: return "爵士"
-        case .electronic: return "电子"
-        case .custom: return "自定义"
+        case .flat: return String(localized: "默认")
+        case .bass: return String(localized: "低音增强")
+        case .vocal: return String(localized: "人声")
+        case .pop: return String(localized: "流行")
+        case .rock: return String(localized: "摇滚")
+        case .classical: return String(localized: "古典")
+        case .jazz: return String(localized: "爵士")
+        case .electronic: return String(localized: "电子")
+        case .custom: return String(localized: "自定义")
         }
     }
 

@@ -595,12 +595,18 @@ struct IOSLibraryView: View {
                             .foregroundStyle(Theme.accent)
                             .frame(width: 36, height: 36)
                         VStack(alignment: .leading, spacing: 3) {
-                            Text(verbatim: "LX 音源")
+                            Text("LX 音源")
                                 .font(.headline)
-                            Text(verbatim: lxStore.selectedSource.map { "已启用：\($0.name)" } ?? "未启用音源，可在这里导入")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
+                            Group {
+                                if let source = lxStore.selectedSource {
+                                    Text("已启用：\(source.name)")
+                                } else {
+                                    Text("未启用音源，可在这里导入")
+                                }
+                            }
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
                         }
                         Spacer()
                         Image(systemName: "chevron.right")
@@ -615,13 +621,13 @@ struct IOSLibraryView: View {
                 } label: {
                     HStack {
                         Image(systemName: "square.and.arrow.down")
-                        Text(verbatim: "管理 / 导入 LX 音源")
+                        Text("管理 / 导入 LX 音源")
                     }
                 }
             } header: {
-                Text(verbatim: "音源设置")
+                Text("音源设置")
             } footer: {
-                        Text(verbatim: "账号音源会优先提供完整音频；没有可用账号音频时，歌曲才会按这里启用的 LX User API 顺序回退。")
+                        Text("账号音源会优先提供完整音频；没有可用账号音频时，歌曲才会按这里启用的 LX User API 顺序回退。")
             }
 
             // Profile / Login header

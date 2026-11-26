@@ -76,7 +76,7 @@ struct LocalPlaylistsView: View {
                                 }
                             }
                             .buttonStyle(.plain)
-                            .accessibilityLabel("\(playlist.name)，\(selectedPlaylistIDs.contains(playlist.id) ? "已选择" : "未选择")")
+                            .accessibilityLabel("\(playlist.name)，\(selectedPlaylistIDs.contains(playlist.id) ? String(localized: "已选择") : String(localized: "未选择"))")
                         } else {
                             NavigationLink(value: Destination.localPlaylist(playlist.id)) {
                                 playlistListRow(playlist)
@@ -286,7 +286,7 @@ struct LocalPlaylistsView: View {
                 .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.small, style: .continuous))
             VStack(alignment: .leading, spacing: 2) {
                 Text(playlist.name).font(.body).lineLimit(1)
-                Text(["\(playlist.tracks.count) 首歌曲", playlist.sourceName]
+                Text([String(localized: "\(playlist.tracks.count) 首歌曲"), playlist.sourceName]
                     .compactMap { $0 }.joined(separator: " · "))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -361,7 +361,9 @@ struct LocalPlaylistsView: View {
 
     private var likedSongsSubtitle: String {
         let count = store.favoriteTracks.count
-        return count == 0 ? "收藏的歌曲会保存在这里" : "\(count) 首歌曲 · 可通过 LX Sync 同步"
+        return count == 0
+            ? String(localized: "收藏的歌曲会保存在这里")
+            : String(localized: "\(count) 首歌曲 · 可通过 LX Sync 同步")
     }
 
     private var allPlaylistsSelected: Bool {

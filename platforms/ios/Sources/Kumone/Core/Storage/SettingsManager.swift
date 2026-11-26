@@ -17,29 +17,29 @@ enum AudioQuality: String, CaseIterable, Identifiable {
 
     var displayName: String {
         switch self {
-        case .master: return "母带"
-        case .atmos: return "全景声"
-        case .dolby: return "杜比全景声"
-        case .surround: return "环绕声"
+        case .master: return String(localized: "母带")
+        case .atmos: return String(localized: "全景声")
+        case .dolby: return String(localized: "杜比全景声")
+        case .surround: return String(localized: "环绕声")
         case .hires: return "Hi-Res"
-        case .lossless: return "无损"
-        case .exhigh: return "极高"
-        case .higher: return "较高"
-        case .standard: return "标准"
+        case .lossless: return String(localized: "无损")
+        case .exhigh: return String(localized: "极高")
+        case .higher: return String(localized: "较高")
+        case .standard: return String(localized: "标准")
         }
     }
 
     var badge: String {
         switch self {
-        case .master: return "母带"
-        case .atmos: return "全景声"
-        case .dolby: return "杜比全景声"
-        case .surround: return "环绕声"
-        case .hires: return "高解析"
-        case .lossless: return "无损"
-        case .exhigh: return "极高"
-        case .higher: return "较高"
-        case .standard: return "标准"
+        case .master: return String(localized: "母带")
+        case .atmos: return String(localized: "全景声")
+        case .dolby: return String(localized: "杜比全景声")
+        case .surround: return String(localized: "环绕声")
+        case .hires: return String(localized: "高解析")
+        case .lossless: return String(localized: "无损")
+        case .exhigh: return String(localized: "极高")
+        case .higher: return String(localized: "较高")
+        case .standard: return String(localized: "标准")
         }
     }
 
@@ -60,12 +60,12 @@ enum AudioQuality: String, CaseIterable, Identifiable {
     /// active source did not advertise.
     var sourceDisplayName: String {
         switch self {
-        case .master: return "母带 / Master"
-        case .atmos: return "全景声 / Atmos"
-        case .dolby: return "杜比全景声 / Dolby"
-        case .surround: return "环绕声 / Surround"
+        case .master: return String(localized: "母带 / Master")
+        case .atmos: return String(localized: "全景声 / Atmos")
+        case .dolby: return String(localized: "杜比全景声 / Dolby")
+        case .surround: return String(localized: "环绕声 / Surround")
         case .hires: return "Hi-Res / FLAC 24-bit"
-        case .lossless: return "无损 FLAC"
+        case .lossless: return String(localized: "无损 FLAC")
         case .exhigh, .higher: return "320 kbps"
         case .standard: return "128 kbps"
         }
@@ -77,9 +77,9 @@ enum AudioQuality: String, CaseIterable, Identifiable {
         switch self {
         case .master: return "Master"
         case .atmos, .dolby: return "Dolby Atmos"
-        case .surround: return "环绕声"
-        case .hires: return "Hi-Res 无损"
-        case .lossless: return "无损"
+        case .surround: return String(localized: "环绕声")
+        case .hires: return String(localized: "Hi-Res 无损")
+        case .lossless: return String(localized: "无损")
         case .exhigh, .higher: return "320K"
         case .standard: return "128K"
         }
@@ -211,8 +211,8 @@ enum HomeRecommendationMode: String, CaseIterable, Identifiable {
 
     var displayName: String {
         switch self {
-        case .lx: return "LX 推荐"
-        case .netease: return "网易云推荐"
+        case .lx: return String(localized: "LX 推荐")
+        case .netease: return String(localized: "网易云推荐")
         }
     }
 }

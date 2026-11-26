@@ -684,7 +684,7 @@ struct SearchView: View {
                             model.setPlatform(platform)
                             resignSearchInput()
                         } label: {
-                            Text(platform.displayName)
+                            Text(platform.localizedName)
                             .font(.subheadline.weight(.semibold))
                             .padding(.horizontal, 14)
                             .padding(.vertical, 7)
@@ -783,7 +783,7 @@ struct SearchView: View {
                     Text("热门搜索")
                         .font(.title3.weight(.bold))
                     Spacer()
-                    Text(model.platform.displayName)
+                    Text(model.platform.localizedName)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -1000,7 +1000,7 @@ struct SearchView: View {
                 CoverCardBody(
                     coverURL: playlist.coverURL?.resizedImageURL(384),
                     title: playlist.name,
-                    subtitle: [playlist.source.displayName, playlist.author].compactMap { $0 }.joined(separator: " · "),
+                    subtitle: [playlist.source.localizedName, playlist.author].compactMap { $0 }.joined(separator: " · "),
                     playCount: playlist.playCount
                 )
             }

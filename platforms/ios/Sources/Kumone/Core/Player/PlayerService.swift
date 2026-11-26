@@ -28,11 +28,11 @@ enum PlaybackMode: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .sequential: return "顺序播放"
-        case .repeatAll: return "列表循环"
-        case .repeatOne: return "单曲循环"
-        case .shuffle: return "随机播放"
-        case .shuffleRepeat: return "随机循环"
+        case .sequential: return String(localized: "顺序播放")
+        case .repeatAll: return String(localized: "列表循环")
+        case .repeatOne: return String(localized: "单曲循环")
+        case .shuffle: return String(localized: "随机播放")
+        case .shuffleRepeat: return String(localized: "随机循环")
         }
     }
 

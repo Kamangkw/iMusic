@@ -18,7 +18,7 @@ struct SleepTimerMenu: View {
             }
 
             ForEach([15, 30, 45, 60, 90], id: \.self) { minutes in
-                Button(String(localized: "睡眠定时 (minutes) 分钟")) {
+                Button(String(localized: "睡眠定时 (\(minutes)) 分钟")) {
                     sleepTimer.schedule(afterMinutes: minutes)
                 }
                 .disabled(!player.hasCurrentTrack)

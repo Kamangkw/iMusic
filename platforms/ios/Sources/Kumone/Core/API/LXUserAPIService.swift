@@ -530,16 +530,16 @@ final class LXUserAPIService: ObservableObject {
 
         var errorDescription: String? {
             switch self {
-            case .noSource: return "请先在“设置 → LX 音源”中导入并启用音源"
+            case .noSource: return String(localized: "请先在“设置 → LX 音源”中导入并启用音源")
             case .resolveFailed(let failures):
-                guard !failures.isEmpty else { return "LX 音源没有返回可播放地址" }
+                guard !failures.isEmpty else { return String(localized: "LX 音源没有返回可播放地址") }
                 return failures.prefix(2).joined(separator: "；")
             case .sourceUnavailable(let status):
-                return status.isEmpty ? "LX 音源尚未返回可用播放接口" : status
+                return status.isEmpty ? String(localized: "LX 音源尚未返回可用播放接口") : status
             case .missingCapability(let platform, let action):
-                return "当前 LX 音源未提供\(LXCatalogPlatform.displayName(for: platform))的 \(action) 接口，请启用支持该平台的音源"
+                return String(localized: "当前 LX 音源未提供\(LXCatalogPlatform.localizedName(for: platform))的 \(action) 接口，请启用支持该平台的音源")
             case .javascript(let message): return message
-            case .requestTimedOut: return "LX 音源请求超时，请检查音源服务器和网络后重试"
+            case .requestTimedOut: return String(localized: "LX 音源请求超时，请检查音源服务器和网络后重试")
             }
         }
     }

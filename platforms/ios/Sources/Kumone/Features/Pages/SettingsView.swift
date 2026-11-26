@@ -90,7 +90,7 @@ struct SettingsView: View {
                 }
                 Picker("推荐平台", selection: $settings.homeRecommendationPlatform) {
                     ForEach(LXCatalogPlatform.discoveryCases) { platform in
-                        Text(platform.displayName).tag(platform)
+                        Text(platform.localizedName).tag(platform)
                     }
                 }
                 Text("聚合搜索只属于搜索页；首页始终使用你选定的一个推荐平台，并在每次刷新时重新读取内容。")
@@ -197,10 +197,16 @@ struct SettingsView: View {
             HStack {
                 Label("管理 / 导入 LX 音源", systemImage: "waveform.badge.plus")
                 Spacer()
-                Text(lxStore.selectedSource?.name ?? "未启用")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                Group {
+                    if let sourceName = lxStore.selectedSource?.name {
+                        Text(verbatim: sourceName)
+                    } else {
+                        Text("未启用")
+                    }
+                }
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
             }
         }
         .frame(minHeight: 44)
@@ -254,12 +260,12 @@ struct SettingsView: View {
 }
 
 private struct SettingsDisclosureSection<Content: View>: View {
-    private let title: String
+    private let title: LocalizedStringKey
     @Binding private var isExpanded: Bool
     private let content: () -> Content
 
     init(
-        _ title: String,
+        _ title: LocalizedStringKey,
         isExpanded: Binding<Bool>,
         @ViewBuilder content: @escaping () -> Content
     ) {

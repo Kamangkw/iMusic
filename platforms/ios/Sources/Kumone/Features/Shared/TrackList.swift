@@ -274,7 +274,7 @@ struct TrackRow: View {
     }
 
     private var sourceName: String {
-        LXCatalogPlatform.displayName(for: track.source ?? track.sourceMetadata["source"])
+        LXCatalogPlatform.localizedName(for: track.source ?? track.sourceMetadata["source"])
     }
 
     private var qualityName: String {
@@ -677,11 +677,13 @@ struct TrackListView: View {
 
     private var trackSummary: String {
         let totalMinutes = tracks.reduce(0) { $0 + $1.duration } / 60
-        guard totalMinutes >= 1 else { return "\(tracks.count) 首歌曲" }
+        guard totalMinutes >= 1 else { return String(localized: "\(tracks.count) 首歌曲") }
         let hours = Int(totalMinutes) / 60
         let minutes = Int(totalMinutes) % 60
-        let length = hours > 0 ? "\(hours) 小时 \(minutes) 分钟" : "\(minutes) 分钟"
-        return "\(tracks.count) 首歌曲，\(length)"
+        let length = hours > 0
+            ? String(localized: "\(hours) 小时 \(minutes) 分钟")
+            : String(localized: "\(minutes) 分钟")
+        return String(localized: "\(tracks.count) 首歌曲，\(length)")
     }
 
     private var playableTracks: [Track] {

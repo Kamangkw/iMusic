@@ -123,7 +123,7 @@ struct LXArtistDetailView: View {
                 Text(artistName)
                     .font(.title3.weight(.semibold))
                     .lineLimit(2)
-                Text(source.displayName)
+                Text(source.localizedName)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }

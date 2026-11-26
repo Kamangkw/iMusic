@@ -694,7 +694,7 @@ struct QQMusicPlaylistPickerView: View {
     private func playlistSection(_ title: String, playlists items: [QQMusicAPI.Playlist]) -> some View {
         if !items.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
-                Text(title).font(.headline)
+                Text(LocalizedStringKey(title)).font(.headline)
                 LazyVStack(spacing: 8) {
                     ForEach(items) { playlist in playlistRow(playlist) }
                 }
@@ -765,7 +765,16 @@ struct QQMusicPlaylistPickerView: View {
         }
         .buttonStyle(.plain)
         .disabled(playlists.isImporting)
-        .accessibilityLabel("\(playlist.name)，\(isImported ? (canRefresh ? "已加入，可更新本地副本" : "本地副本，点按后确认覆盖更新") : (isSelected ? "已选择导入" : "未选择"))")
+        .accessibilityLabel("\(playlist.name)，\(playlistStatusLabel(isImported: isImported, canRefresh: canRefresh, isSelected: isSelected))")
+    }
+
+    private func playlistStatusLabel(isImported: Bool, canRefresh: Bool, isSelected: Bool) -> String {
+        if isImported {
+            return canRefresh
+                ? String(localized: "已加入，可更新本地副本")
+                : String(localized: "本地副本，点按后确认覆盖更新")
+        }
+        return isSelected ? String(localized: "已选择导入") : String(localized: "未选择")
     }
 
     private func importSelected() {
@@ -937,7 +946,7 @@ struct RemotePlaylistPickerView: View {
                                 .foregroundStyle(Theme.accent)
                         }
                     }
-                    Text("\(playlist.trackCount) 首 · \(playlist.creator?.nickname ?? "云端歌单")")
+                    Text("\(playlist.trackCount) 首 · \(playlist.creator?.nickname ?? String(localized: "云端歌单"))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -956,7 +965,7 @@ struct RemotePlaylistPickerView: View {
             )
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(playlist.name)，\(isSelected ? "已选择" : "未选择")")
+        .accessibilityLabel("\(playlist.name)，\(isSelected ? String(localized: "已选择") : String(localized: "未选择"))")
     }
 
     private func importSelected() {

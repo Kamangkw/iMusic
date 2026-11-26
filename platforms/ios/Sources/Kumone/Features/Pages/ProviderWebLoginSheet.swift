@@ -11,9 +11,9 @@ enum ProviderWebLoginKind: String, Identifiable {
 
     var title: String {
         switch self {
-        case .netease: return "网易云音乐"
-        case .qqMusic: return "QQ 音乐"
-        case .kugou: return "酷狗音乐"
+        case .netease: return String(localized: "网易云音乐")
+        case .qqMusic: return String(localized: "QQ 音乐")
+        case .kugou: return String(localized: "酷狗音乐")
         }
     }
 
