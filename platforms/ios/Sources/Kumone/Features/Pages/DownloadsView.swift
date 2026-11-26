@@ -115,7 +115,7 @@ struct DownloadsView: View {
         for record in records {
             guard let attributes = try? FileManager.default.attributesOfItem(
                       atPath: record.fileURL.path),
-                  let size = attributes[.size] as? Int64 else { continue }
+                  let size = (attributes[.size] as? NSNumber)?.int64Value else { continue }
             measured[record.id] = size
         }
         sizes = measured
