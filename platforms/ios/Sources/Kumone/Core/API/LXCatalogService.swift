@@ -1254,6 +1254,10 @@ enum LXCatalogService {
             URLQueryItem(name: "rformat", value: "json"),
             URLQueryItem(name: "encoding", value: "utf8"),
             URLQueryItem(name: "ft", value: "playlist"),
+            // Without `pcjson=1` Kuwo answers this endpoint with a JavaScript
+            // object literal that uses single quotes, which is not valid JSON
+            // and made every genre tile fail with `invalidResponse`.
+            URLQueryItem(name: "pcjson", value: "1"),
         ]
         let root = try await fetchObject(components.url!) as? [String: Any]
         let items = dictionaryArray(root, keys: ["abslist", "playlist", "list", "data"])
