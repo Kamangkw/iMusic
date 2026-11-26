@@ -61,11 +61,22 @@ final class DownloadManager: NSObject, ObservableObject {
         applicationDirectory.appendingPathComponent("downloads.json")
     }
 
+    /// Audio files are re-downloadable, so they must not inflate an iCloud
+    /// backup. Re-applied whenever the directory is (re)created.
+    private func prepareDownloadDirectory() {
+        let fm = FileManager.default
+        try? fm.createDirectory(at: Self.downloadDirectory, withIntermediateDirectories: true)
+        var directory = Self.downloadDirectory
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        try? directory.setResourceValues(values)
+    }
+
     private override init() {
         super.init()
-        try? FileManager.default.createDirectory(at: Self.downloadDirectory,
-                                                 withIntermediateDirectories: true)
+        prepareDownloadDirectory()
         load()
+        pruneStaleFiles()
     }
 
     func record(for track: Track) -> Record? {
@@ -145,8 +156,7 @@ final class DownloadManager: NSObject, ObservableObject {
                     throw DownloadError.http(response.statusCode)
                 }
 
-                try FileManager.default.createDirectory(at: Self.downloadDirectory,
-                                                         withIntermediateDirectories: true)
+                prepareDownloadDirectory()
                 let ext = Self.fileExtension(for: resolved.url)
                 let fileName = "\(UUID().uuidString).\(ext)"
                 let destination = Self.downloadDirectory.appendingPathComponent(fileName)
@@ -245,6 +255,22 @@ final class DownloadManager: NSObject, ObservableObject {
     private func save() {
         guard let data = try? JSONEncoder().encode(records) else { return }
         try? data.write(to: Self.manifestURL, options: .atomic)
+    }
+
+    /// Drops records whose file is gone and deletes files the manifest does not
+    /// reference, so neither a crash mid-download nor iOS reclaiming app data
+    /// leaves the library pointing at nothing or the disk holding dead weight.
+    func pruneStaleFiles() {
+        let fm = FileManager.default
+        let before = records.count
+        records.removeAll { !fm.fileExists(atPath: $0.fileURL.path) }
+        if records.count != before { save() }
+
+        let known = Set(records.map(\.fileName))
+        guard let names = try? fm.contentsOfDirectory(atPath: Self.downloadDirectory.path) else { return }
+        for name in names where !known.contains(name) {
+            try? fm.removeItem(at: Self.downloadDirectory.appendingPathComponent(name))
+        }
     }
 
     private static func fileExtension(for url: URL) -> String {
