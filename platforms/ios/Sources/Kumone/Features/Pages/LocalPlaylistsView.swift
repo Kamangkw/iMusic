@@ -519,6 +519,15 @@ struct LikedSongsView: View {
                         Label("删除所选（\(selectedFavoriteKeys.count)）", systemImage: "trash")
                     }
                 }
+                #if os(iOS)
+                Button {
+                    BatchDownload.start(store.favoriteTracks)
+                } label: {
+                    Image(systemName: "arrow.down.circle")
+                }
+                .accessibilityLabel(String(localized: "下载全部"))
+                .disabled(store.favoriteTracks.isEmpty)
+                #endif
                 if !isSelectingFavorites {
                     // Account imports are occasional maintenance actions, so
                     // they move off the page body into one toolbar menu.
@@ -921,6 +930,13 @@ struct LocalPlaylistDetailView: View {
                             } label: {
                                 Label("调整歌曲顺序", systemImage: "line.3.horizontal")
                             }
+                            #if os(iOS)
+                            Button {
+                                BatchDownload.start(playlist.tracks)
+                            } label: {
+                                Label("下载全部", systemImage: "arrow.down.circle")
+                            }
+                            #endif
                         }
                         ShareLink(item: store.exportText(playlist)) {
                             Label("导出歌单", systemImage: "square.and.arrow.up")
