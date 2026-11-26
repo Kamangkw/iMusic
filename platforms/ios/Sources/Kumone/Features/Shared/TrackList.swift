@@ -40,6 +40,10 @@ struct TrackRow: View {
     @State private var showAddToPlaylist = false
     #if os(iOS)
     @ObservedObject private var lxStore = LXSourceStore.shared
+    /// One iOS-only engine owns the files, so the row observes it directly and
+    /// the menu and the offline badge follow transfers without extra plumbing.
+    @ObservedObject private var downloads = DownloadManager.shared
+    @State private var showDownloadQualities = false
     #endif
 
     private var isCurrent: Bool { player.currentTrack?.playbackKey == track.playbackKey }
@@ -183,6 +187,11 @@ struct TrackRow: View {
         .sheet(isPresented: $showAddToPlaylist) {
             AddToPlaylistSheet(track: track)
         }
+        #if os(iOS)
+        .sheet(isPresented: $showDownloadQualities) {
+            DownloadQualitySheet(track: track)
+        }
+        #endif
     }
 
     @ViewBuilder
@@ -266,12 +275,30 @@ struct TrackRow: View {
 
     private var likeAndDuration: some View {
         HStack(spacing: 8) {
+            #if os(iOS)
+            if isDownloaded {
+                downloadBadge
+            }
+            #endif
             Text(Formatters.duration(track.duration))
                 .font(.caption2.monospacedDigit())
                 .foregroundStyle(.tertiary)
                 .frame(width: 36, alignment: .trailing)
         }
     }
+
+    #if os(iOS)
+    private var isDownloaded: Bool { downloads.record(for: track) != nil }
+
+    /// Offline availability, beside the duration like the system player's
+    /// downloaded marker.
+    private var downloadBadge: some View {
+        Image(systemName: "arrow.down.circle.fill")
+            .font(.caption2)
+            .foregroundStyle(.tertiary)
+            .accessibilityLabel(String(localized: "已下载"))
+    }
+    #endif
 
     private var sourceName: String {
         LXCatalogPlatform.localizedName(for: track.source ?? track.sourceMetadata["source"])
@@ -319,6 +346,10 @@ struct TrackRow: View {
         Button(localLibrary.isFavorite(track) ? "取消收藏" : "加入我喜欢的音乐") {
             localLibrary.toggleFavorite(track)
         }
+        #if os(iOS)
+        Divider()
+        downloadMenuItems
+        #endif
         Divider()
         Button("收藏到歌单…") {
             showAddToPlaylist = true
@@ -335,7 +366,118 @@ struct TrackRow: View {
             ToastCenter.shared.show(String(localized: "歌曲信息已复制"))
         }
     }
+
+    #if os(iOS)
+    /// Start a download at the preferred quality, pick a tier, watch the
+    /// transfer, or drop the offline copy. The engine exposes no cancel, so a
+    /// running download is reported rather than offered as a button.
+    @ViewBuilder
+    private var downloadMenuItems: some View {
+        if let progress = downloadProgressLabel {
+            Button(progress) {}
+                .disabled(true)
+        } else if let record = downloads.record(for: track) {
+            Button("删除下载", role: .destructive) {
+                downloads.delete(record)
+                ToastCenter.shared.show(String(localized: "已删除下载"))
+            }
+        } else {
+            Button("下载") { downloads.download(track) }
+            Button("下载音质…") { showDownloadQualities = true }
+        }
+    }
+
+    /// `nil` unless this track is transferring. Menus convert their content
+    /// when they open, so the percentage is read from the observed engine.
+    private var downloadProgressLabel: String? {
+        let key = track.normalizedForLXPlayback().playbackKey
+        guard let active = downloads.activeDownloads[key] else { return nil }
+        guard let fraction = active.fraction else {
+            return String(localized: "正在下载…")
+        }
+        return String(localized: "正在下载…（\(Int(fraction * 100))%）")
+    }
+    #endif
 }
+
+#if os(iOS)
+// MARK: - Download quality
+
+/// Tier picker for a single download. The engine probes the enabled sources
+/// once per tier, so the list is requested when this sheet opens rather than
+/// for every row of every list.
+private struct DownloadQualitySheet: View {
+    let track: Track
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var available: [AudioQuality] = []
+    @State private var isLoading = true
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("当前歌曲") {
+                    Text(track.name)
+                        .lineLimit(2)
+                    Text(track.artistNames)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
+                if !available.isEmpty {
+                    Section("选择音质") {
+                        ForEach(available) { quality in
+                            Button {
+                                DownloadManager.shared.download(track, quality: quality)
+                                dismiss()
+                            } label: {
+                                HStack {
+                                    Text(quality.sourceDisplayName)
+                                    Spacer()
+                                    Text(quality.badgeName)
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            .foregroundStyle(.primary)
+                            .frame(minHeight: 44)
+                        }
+                    }
+                } else if !isLoading {
+                    Section("选择音质") {
+                        Text("当前音源没有返回可用音质，请检查是否已启用 LX 音源。")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                if isLoading {
+                    ProgressView("正在读取音源支持的音质")
+                }
+
+                Section {
+                    Text("实际保存的档位以音源返回的地址为准。")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .navigationTitle("下载音质")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("完成") { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+        .task {
+            let result = await DownloadManager.shared.availableQualities(for: track)
+            guard !Task.isCancelled else { return }
+            available = result
+            isLoading = false
+        }
+    }
+}
+#endif
 
 // MARK: - Playing indicator
 
@@ -590,6 +732,8 @@ struct TrackListView: View {
     /// not for short song shelves inside feeds.
     var showsSummary = true
     var sourceAlternatives: [String: [Track]] = [:]
+    /// Per-row trailing detail (e.g. the saved tier on the downloads page).
+    var rowTrailingText: ((Track) -> String?)? = nil
 
     @EnvironmentObject private var player: PlayerService
     @EnvironmentObject private var account: AccountStore
@@ -630,6 +774,7 @@ struct TrackListView: View {
                         index: style == .albumTrack ? (track.trackNo > 0 ? track.trackNo : index + 1) : index + 1,
                         style: style,
                         playability: playability(of: track),
+                        trailingText: rowTrailingText?(track),
                         removableFromPlaylistID: removableFromPlaylistID,
                         onRemoved: { onRemoved?(track) },
                         showsSeparator: showsSeparators && index < tracks.count - 1,

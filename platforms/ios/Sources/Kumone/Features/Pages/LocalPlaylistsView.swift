@@ -7,6 +7,9 @@ import UIKit
 
 struct LocalPlaylistsView: View {
     @StateObject private var store = LocalPlaylistStore.shared
+    #if os(iOS)
+    @ObservedObject private var downloads = DownloadManager.shared
+    #endif
     @State private var showImport = false
     @State private var showCreate = false
     @State private var showSourceManager = false
@@ -28,6 +31,11 @@ struct LocalPlaylistsView: View {
                 .accessibilityLabel("我喜欢的音乐，\(likedSongsSubtitle)")
                 libraryNavigationRow("最近播放", icon: "clock", destination: .recents)
                 libraryNavigationRow("我的收藏", icon: "square.stack", destination: .collections)
+                #if os(iOS)
+                NavigationLink(value: Destination.downloads) {
+                    libraryRowLabel("已下载", icon: "arrow.down.circle", detail: downloadCountText)
+                }
+                #endif
             }
             .listSectionSeparator(.hidden, edges: .top)
 
@@ -240,6 +248,12 @@ struct LocalPlaylistsView: View {
     private var favoriteCountText: String? {
         store.favoriteTracks.isEmpty ? nil : "\(store.favoriteTracks.count)"
     }
+
+    #if os(iOS)
+    private var downloadCountText: String? {
+        downloads.records.isEmpty ? nil : "\(downloads.records.count)"
+    }
+    #endif
 
     private func playlistListRow(_ playlist: LocalPlaylist) -> some View {
         HStack(spacing: 12) {

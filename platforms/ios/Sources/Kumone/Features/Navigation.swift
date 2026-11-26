@@ -76,6 +76,7 @@ enum Destination: Hashable {
     case localPlaylists
     case localPlaylist(UUID)
     case likedSongs
+    case downloads
 }
 
 /// Lets full-screen surfaces (the player) ask the tab interface to show a
@@ -148,6 +149,8 @@ struct DestinationsModifier: ViewModifier {
                     LocalPlaylistDetailView(playlistID: id)
                 case .likedSongs:
                     LikedSongsView()
+                case .downloads:
+                    DownloadsView()
                 }
             }
             .playerContentInset()
