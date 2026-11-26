@@ -85,6 +85,12 @@ struct LXPlaylistDetailView: View {
         })?.id
     }
 
+    /// The loaded snapshot is what the page offers to download; a page whose
+    /// detail has not arrived yet has nothing to start.
+    private var downloadableTracks: [Track] {
+        model.detail?.tracks ?? []
+    }
+
     var body: some View {
         ScrollView {
             if model.isLoading && model.detail == nil {
@@ -102,6 +108,19 @@ struct LXPlaylistDetailView: View {
         }
         .navigationTitle(model.detail?.name ?? "歌单")
         .navigationBarTitleDisplayMode(.inline)
+        #if os(iOS)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    BatchDownload.start(downloadableTracks)
+                } label: {
+                    Image(systemName: "arrow.down.circle")
+                }
+                .accessibilityLabel(String(localized: "下载全部"))
+                .disabled(downloadableTracks.isEmpty)
+            }
+        }
+        #endif
         .task(id: "\(source.rawValue)|\(playlistID)") {
             await model.load(source: source, playlistID: playlistID)
         }

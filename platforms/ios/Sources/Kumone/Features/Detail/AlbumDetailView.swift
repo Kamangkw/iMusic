@@ -112,6 +112,17 @@ struct AlbumDetailView: View {
                 }
                 .disabled(collectedAlbum == nil)
             }
+            #if os(iOS)
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    BatchDownload.start(tracks)
+                } label: {
+                    Image(systemName: "arrow.down.circle")
+                }
+                .accessibilityLabel(String(localized: "下载全部"))
+                .disabled(tracks.isEmpty)
+            }
+            #endif
         }
         .task(id: albumID) {
             await load()

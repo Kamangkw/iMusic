@@ -126,6 +126,17 @@ struct LXArtistDetailView: View {
                           systemImage: isCollected ? "star.fill" : "star")
                 }
             }
+            #if os(iOS)
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    BatchDownload.start(model.tracks)
+                } label: {
+                    Image(systemName: "arrow.down.circle")
+                }
+                .accessibilityLabel(String(localized: "下载全部"))
+                .disabled(model.tracks.isEmpty)
+            }
+            #endif
         }
         .task(id: "\(source.rawValue)-\(artistName)") {
             await model.load(source: source, artistName: artistName)
