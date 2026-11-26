@@ -76,6 +76,11 @@ final class DownloadManager: NSObject, ObservableObject {
         }
         guard tasks[key] == nil else { return }
 
+        if SettingsManager.shared.downloadOnlyOnWiFi, NetworkMonitor.shared.isOnCellular {
+            ToastCenter.shared.show(String(localized: "正在使用移动数据，已暂停下载"))
+            return
+        }
+
         let requestedQuality = quality ?? SettingsManager.shared.audioQuality
         activeDownloads[key] = ActiveDownload(id: key, track: normalized,
                                               requestedQuality: requestedQuality,

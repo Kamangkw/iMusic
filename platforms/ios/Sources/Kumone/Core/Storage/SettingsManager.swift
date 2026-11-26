@@ -240,6 +240,7 @@ final class SettingsManager: ObservableObject {
         static let homeRecommendationPlatform = "settings.homeRecommendationPlatform"
         static let sourcePlatformFallback = "settings.sourcePlatformFallback"
         static let autoDownloadFavorites = "settings.autoDownloadFavorites"
+        static let downloadOnlyOnWiFi = "settings.downloadOnlyOnWiFi"
     }
 
     @Published var audioQuality: AudioQuality {
@@ -326,6 +327,12 @@ final class SettingsManager: ObservableObject {
         didSet { UserDefaults.standard.set(autoDownloadFavorites, forKey: Keys.autoDownloadFavorites) }
     }
 
+    /// Pause downloads while the phone is on cellular data. On by default so a
+    /// first-time install cannot spend a data plan without the user choosing to.
+    @Published var downloadOnlyOnWiFi: Bool {
+        didSet { UserDefaults.standard.set(downloadOnlyOnWiFi, forKey: Keys.downloadOnlyOnWiFi) }
+    }
+
     private init() {
         let defaults = UserDefaults.standard
         defaults.removeObject(forKey: "settings.nowPlayingMode")
@@ -368,5 +375,6 @@ final class SettingsManager: ObservableObject {
         } ?? .wy
         enableSourcePlatformFallback = defaults.object(forKey: Keys.sourcePlatformFallback) as? Bool ?? true
         autoDownloadFavorites = defaults.object(forKey: Keys.autoDownloadFavorites) as? Bool ?? true
+        downloadOnlyOnWiFi = defaults.object(forKey: Keys.downloadOnlyOnWiFi) as? Bool ?? true
     }
 }

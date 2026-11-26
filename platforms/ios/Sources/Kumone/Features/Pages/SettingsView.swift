@@ -87,6 +87,7 @@ struct SettingsView: View {
                 Text("开启后，加入我喜欢的音乐时会同时保存一份离线文件。")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                Toggle("仅在 Wi-Fi 下下载", isOn: $settings.downloadOnlyOnWiFi)
             }
 #endif
 
