@@ -4,7 +4,6 @@ struct SettingsView: View {
     @EnvironmentObject private var settings: SettingsManager
 #if os(iOS)
     @StateObject private var lxStore = LXSourceStore.shared
-    @StateObject private var updateLog = IOSUpdateLogStore.shared
 #endif
     @State private var cacheSize = "计算中…"
     @State private var showEqualizer = false
@@ -18,7 +17,7 @@ struct SettingsView: View {
     @State private var expandedSections: Set<String> = [
         "audio", "accounts", "playback", "home", "sources",
         "appearance", "lyrics",
-        "storage", "updates", "about"
+        "storage", "about"
     ]
 
     var body: some View {
@@ -133,22 +132,6 @@ struct SettingsView: View {
             SettingsDisclosureSection("存储", isExpanded: sectionBinding("storage")) {
                 LabeledContent("图片缓存", value: cacheSize)
                 Button("清除缓存") { clearCache() }
-            }
-
-            SettingsDisclosureSection("更新", isExpanded: sectionBinding("updates")) {
-                Toggle("启动时自动检查更新", isOn: $settings.autoCheckUpdates)
-#if os(iOS)
-                Button {
-                    IOSUpdater.shared.check(interactive: true)
-                } label: {
-                    Label("检查更新", systemImage: "arrow.triangle.2.circlepath")
-                }
-                Button {
-                    updateLog.present()
-                } label: {
-                    Label("查看更新日志", systemImage: "doc.text.magnifyingglass")
-                }
-#endif
             }
 
             SettingsDisclosureSection("关于", isExpanded: sectionBinding("about")) {

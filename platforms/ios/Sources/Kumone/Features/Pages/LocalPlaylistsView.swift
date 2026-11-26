@@ -7,7 +7,6 @@ import UIKit
 
 struct LocalPlaylistsView: View {
     @StateObject private var store = LocalPlaylistStore.shared
-    @ObservedObject private var sync = LXSyncService.shared
     @State private var showImport = false
     @State private var showCreate = false
     @State private var showSourceManager = false
@@ -29,22 +28,6 @@ struct LocalPlaylistsView: View {
                 .accessibilityLabel("我喜欢的音乐，\(likedSongsSubtitle)")
                 libraryNavigationRow("最近播放", icon: "clock", destination: .recents)
                 libraryNavigationRow("我的收藏", icon: "square.stack", destination: .collections)
-                NavigationLink {
-                    LXSyncSettingsView()
-                } label: {
-                    libraryRowLabel("同步资料库", icon: "arrow.triangle.2.circlepath", detail: nil) {
-                        HStack(spacing: 5) {
-                            if sync.isConnected {
-                                Circle().fill(.green).frame(width: 7, height: 7)
-                            }
-                            Text(sync.statusMessage)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                        }
-                    }
-                }
-                .accessibilityIdentifier("librarySyncEntry")
             }
             .listSectionSeparator(.hidden, edges: .top)
 
@@ -112,19 +95,6 @@ struct LocalPlaylistsView: View {
         .contentMargins(.horizontal, Theme.Layout.contentInset - 16, for: .scrollContent)
         .tint(Theme.accent)
         .navigationTitle("资料库")
-#if os(iOS)
-        .refreshable {
-            let sync = LXSyncService.shared
-            guard !sync.endpoint.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-            do {
-                try await sync.refreshFromServer()
-            } catch {
-                // LXSyncService publishes connection/sync errors for the sync
-                // screen; keep the pull gesture itself from surfacing a
-                // duplicate SwiftUI error presentation.
-            }
-        }
-#endif
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 if isSelectingPlaylists {
@@ -363,7 +333,7 @@ struct LocalPlaylistsView: View {
         let count = store.favoriteTracks.count
         return count == 0
             ? String(localized: "收藏的歌曲会保存在这里")
-            : String(localized: "\(count) 首歌曲 · 可通过 LX Sync 同步")
+            : String(localized: "\(count) 首歌曲")
     }
 
     private var allPlaylistsSelected: Bool {

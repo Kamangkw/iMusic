@@ -8,8 +8,6 @@ public struct IOSMainWindow: View {
     @StateObject private var qqMusic = QQMusicSessionStore.shared
     @StateObject private var kugou = KugouSessionStore.shared
     @StateObject private var toasts = ToastCenter.shared
-    @StateObject private var updater = IOSUpdater.shared
-    @StateObject private var updateLog = IOSUpdateLogStore.shared
     private let startup = IOSStartupCoordinator.shared
     @StateObject private var nowPlayingSource = NativeNowPlayingSource()
     @Environment(\.colorScheme) private var systemColorScheme
@@ -72,13 +70,6 @@ public struct IOSMainWindow: View {
                     try? await Task.sleep(for: .seconds(6))
                     player.showNowPlaying = true
                 }
-                if !IOSUITestMode.isEnabled {
-                    await LXSyncService.shared.reconnectIfConfigured()
-                    updateLog.presentIfNeeded()
-                    if settings.autoCheckUpdates {
-                        IOSUpdater.shared.check(interactive: false)
-                    }
-                }
             }
             .onChange(of: scenePhase) { phase in
                 RenderingBudget.shared.setSceneActive(phase == .active)
@@ -88,7 +79,6 @@ public struct IOSMainWindow: View {
                 Task { @MainActor in
                     await account.refreshForOpen()
                     await MusicSessionRefreshCoordinator.shared.refreshIfNeeded()
-                    await LXSyncService.shared.reconnectIfConfigured()
                 }
             }
             .onChange(of: selectedTab) { previous, tab in
@@ -107,12 +97,6 @@ public struct IOSMainWindow: View {
             .onOpenURL { url in
                 guard ["imusic", "moumusic"].contains(url.scheme?.lowercased() ?? "") else { return }
                 player.showNowPlaying = true
-            }
-            .sheet(isPresented: $updater.showSheet) {
-                IOSUpdaterSheet()
-            }
-            .sheet(isPresented: $updateLog.isPresented) {
-                IOSUpdateLogSheet()
             }
             .overlay(alignment: .top) {
                 if let toast = toasts.current {
