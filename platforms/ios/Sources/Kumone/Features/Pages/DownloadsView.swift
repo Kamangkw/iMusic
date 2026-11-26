@@ -47,7 +47,8 @@ struct DownloadsView: View {
                     TrackListView(
                         tracks: tracks,
                         source: .none,
-                        rowTrailingText: downloadQuality
+                        rowTrailingText: downloadQuality,
+                        showsFavoriteBadge: true
                     )
                     .padding(.horizontal, Theme.Layout.contentInset - 10)
                 }

@@ -25,6 +25,8 @@ struct TrackRow: View {
     var showsSeparator = false
     var sourceAlternatives: [Track] = []
     var onPlayFromSource: ((Track) -> Void)?
+    /// Show a star beside the duration for tracks the user has liked.
+    var showsFavoriteBadge = false
     let onPlay: () -> Void
 
     @EnvironmentObject private var player: PlayerService
@@ -276,6 +278,12 @@ struct TrackRow: View {
     private var likeAndDuration: some View {
         HStack(spacing: 8) {
             #if os(iOS)
+            if showsFavoriteBadge, localLibrary.isFavorite(track) {
+                Image(systemName: "star.fill")
+                    .font(.caption2)
+                    .foregroundStyle(Theme.accent)
+                    .accessibilityLabel(String(localized: "已收藏"))
+            }
             if isDownloaded {
                 downloadBadge
             }
@@ -734,6 +742,8 @@ struct TrackListView: View {
     var sourceAlternatives: [String: [Track]] = [:]
     /// Per-row trailing detail (e.g. the saved tier on the downloads page).
     var rowTrailingText: ((Track) -> String?)? = nil
+    /// Show a star beside the duration for tracks the user has liked.
+    var showsFavoriteBadge = false
 
     @EnvironmentObject private var player: PlayerService
     @EnvironmentObject private var account: AccountStore
@@ -793,7 +803,8 @@ struct TrackListView: View {
                             SearchPlaybackAlternatives.remember(for: queue, groups: groups)
                             player.play(tracks: queue.filter { playability(of: $0) == .playable },
                                         source: source, startAt: alternate, context: context)
-                        }
+                        },
+                        showsFavoriteBadge: showsFavoriteBadge
                     ) {
                         if !sourceAlternatives.isEmpty {
                             SearchPlaybackAlternatives.remember(for: tracks, groups: sourceAlternatives)
