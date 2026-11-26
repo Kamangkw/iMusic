@@ -229,6 +229,7 @@ final class SettingsManager: ObservableObject {
         static let showRomaji = "settings.showLyricsRomaji"
         static let lyricsAnnotation = "settings.lyricsAnnotation"
         static let lyricsDisplayStyle = "settings.lyricsDisplayStyle"
+        static let lyricsTraditional = "settings.lyricsTraditional"
         static let volume = "settings.volume"
         static let fmMode = "settings.fmMode"
         static let unblock = "settings.enableUnblock"
@@ -255,6 +256,12 @@ final class SettingsManager: ObservableObject {
 
     @Published var showLyricsTranslation: Bool {
         didSet { UserDefaults.standard.set(showLyricsTranslation, forKey: Keys.showTranslation) }
+    }
+
+    /// Show Chinese lyrics in Traditional script. Uses the system ICU
+    /// transform, so the stored lyric text and its timings are untouched.
+    @Published var lyricsTraditional: Bool {
+        didSet { UserDefaults.standard.set(lyricsTraditional, forKey: Keys.lyricsTraditional) }
     }
 
     /// Check for updates on launch. When off, no update sheet appears
@@ -340,6 +347,7 @@ final class SettingsManager: ObservableObject {
         defaults.set(PlaybackSourceMode.thirdParty.rawValue, forKey: Keys.playbackSourceMode)
         appearance = defaults.string(forKey: Keys.appearance).flatMap(AppAppearance.init) ?? .auto
         showLyricsTranslation = defaults.object(forKey: Keys.showTranslation) as? Bool ?? true
+        lyricsTraditional = defaults.object(forKey: Keys.lyricsTraditional) as? Bool ?? true
         showLyricsRomaji = defaults.object(forKey: Keys.showRomaji) as? Bool ?? false
         let legacyRomaji = defaults.object(forKey: Keys.showRomaji) as? Bool ?? false
         lyricsAnnotation = defaults.string(forKey: Keys.lyricsAnnotation)

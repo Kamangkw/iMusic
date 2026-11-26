@@ -1036,7 +1036,8 @@ final class PlayerService: ObservableObject {
     }
 
     private func publishLyrics(_ parsed: ParsedLyrics, for track: Track, generation: Int) {
-        lyrics = parsed
+        let converted = convertedIfNeeded(parsed)
+        lyrics = converted
         updateLyricsCursor(at: livePlaybackTime)
         installLyricCursorObserver()
 
@@ -1044,10 +1045,16 @@ final class PlayerService: ObservableObject {
         // translation field. Enrich the already-visible lyrics from a public
         // NetEase metadata match so English/Japanese songs can show a
         // translation when one exists, without delaying first paint.
-        guard parsed.lines.contains(where: { $0.translation == nil }) else { return }
+        guard converted.lines.contains(where: { $0.translation == nil }) else { return }
         Task { [weak self] in
-            await self?.enrichTranslation(for: track, base: parsed, generation: generation)
+            await self?.enrichTranslation(for: track, base: converted, generation: generation)
         }
+    }
+
+    /// Applies the user's script preference to freshly parsed lyrics. Line ids,
+    /// line times and word timings are carried over unchanged.
+    private func convertedIfNeeded(_ parsed: ParsedLyrics) -> ParsedLyrics {
+        SettingsManager.shared.lyricsTraditional ? parsed.convertedToTraditional() : parsed
     }
 
     private func enrichTranslation(for track: Track, base: ParsedLyrics,
@@ -1062,7 +1069,9 @@ final class PlayerService: ObservableObject {
         }
         guard let candidate,
               let response = try? await NeteaseAPI.lyric(id: candidate.id) else { return }
-        let metadata = LyricsParser.parse(response, includeVerbatim: false)
+        // Metadata translations arrive after first paint, so they need the
+        // same script conversion as the lyrics they are merged into.
+        let metadata = convertedIfNeeded(LyricsParser.parse(response, includeVerbatim: false))
         guard !metadata.isEmpty, generation == resolveGeneration else { return }
 
         var merged = base

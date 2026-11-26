@@ -2,7 +2,7 @@ import Foundation
 
 /// One timed word (or short run) inside a verbatim (yrc) lyric line.
 struct LyricWord: Hashable {
-    let text: String
+    var text: String
     let start: TimeInterval
     let duration: TimeInterval
     var end: TimeInterval { start + duration }
@@ -39,7 +39,7 @@ struct LyricWord: Hashable {
 struct LyricLine: Identifiable, Hashable {
     let id: Int
     let time: TimeInterval
-    let text: String
+    var text: String
     var translation: String?
     var romaji: String?
     /// Optional Japanese reading segments populated from the system tokenizer.
@@ -57,6 +57,28 @@ struct ParsedLyrics: Hashable {
     var translationContributor: String?
 
     var isEmpty: Bool { lines.isEmpty }
+
+    /// Converts the Chinese text to Traditional. Timing, ids and word timings
+    /// are kept; only the displayed strings change.
+    func convertedToTraditional() -> ParsedLyrics {
+        var copy = self
+        copy.lines = lines.map { line in
+            var line = line
+            line.text = ChineseScript.traditional(line.text)
+            if let translation = line.translation {
+                line.translation = ChineseScript.traditional(translation)
+            }
+            if let words = line.words {
+                line.words = words.map { word in
+                    var word = word
+                    word.text = ChineseScript.traditional(word.text)
+                    return word
+                }
+            }
+            return line
+        }
+        return copy
+    }
 
     /// Index of the active line for a playback position.
     func activeIndex(at time: TimeInterval) -> Int? {

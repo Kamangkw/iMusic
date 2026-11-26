@@ -124,6 +124,7 @@ struct SettingsView: View {
 
             SettingsDisclosureSection("歌词显示", isExpanded: sectionBinding("lyrics")) {
                 Toggle("显示歌词翻译", isOn: $settings.showLyricsTranslation)
+                Toggle("歌词自动转为繁体", isOn: $settings.lyricsTraditional)
                 Picker("日文歌词注音", selection: $settings.lyricsAnnotation) {
                     ForEach(LyricsAnnotation.allCases) { annotation in
                         Text(annotation.displayName).tag(annotation)
